@@ -1,0 +1,86 @@
+import numpy as np 
+import pandas as pd 
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from subprocess import check_output
+dressdf = pd.read_csv('../input/C:/Users/yogesh/final dataset.csv')
+print(dressdf.head(5))
+print(dressdf.info())
+for i in dressdf:
+    count = 0
+    for j in dressdf[i]:
+        if j is np.nan:
+            count += 1
+            print('column: '+i+' number of nulls: '+str(count))
+            def bargraphs(df,feature):
+    totalCountYesRec = df[df['recommendation']==1].shape[0]
+    totalCountNotRec = df[df['recommendation'] ==0].shape[0]
+    
+    resultdf = pd.DataFrame()
+    df = df.dropna(axis=0,how='any')
+    
+    allFeatureValues = df[feature].unique()
+    allFeatureValues = np.sort(allFeatureValues)
+    resultdf[feature] = allFeatureValues
+    resultdf['pctStyleRec'] = np.nan
+    resultdf['pctStyleNotRec'] = np.nan
+    for col in allFeatureValues:
+        resultdf.loc[resultdf[feature] == col,['pctStyleRec']] = (df[(df[feature] == col) & 
+        (df['recommendation'] == 1)][feature].count() / totalCountYesRec) 
+        resultdf.loc[resultdf[feature] == col,['pctStyleNotRec']] =(df[(df[feature] == col) & (df['recommendation'] == 0)][feature].count() /totalCountNotRec)
+fig, ax = plt.subplots(1,1,figsize=(9,6))
+print(resultdf)
+
+xTicks = len(allFeatureValues)
+
+ax.bar(np.arange(xTicks),resultdf
+['pctStyleRec'],width=0.45,color='b',align='edge',label='recommended dress: '+feature+' frequency',tick_label=allFeatureValues)
+   ax.bar(np.arange(xTicks),resultdf['pctStyleNotRec'],width=-0.45,color='r',align='edge',label='non-rec dress: '+feature+' frequency',tick_label=allFeatureValues)
+    plt.xticks(rotation=70)
+    plt.title('percent of dresses of feature: '+feature+' in recommend or non-recommended class')
+    plt.legend(loc='best')
+    plt.show()
+    bargraphs(dressdf,'style')
+bargraphs(dressdf,'price')
+bargraphs(dressdf,'rating')
+bargraphs(dressdf,'dress_size')
+bargraphs(dressdf,'season')
+bargraphs(dressdf,'neckline')
+bargraphs(dressdf,'sleeve_length')
+bargraphs(dressdf,'waistline')
+
+df3 = pd.get_dummies(df3)
+
+feature_data = df3.drop('recommendation',axis=1)
+label_data = df3['recommendation']
+x_test, x_train, y_test, y_train = train_test_split(feature_data,label_data,test_size=0.33,random_state=177)
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
+
+paramDict = { 'n_estimators' : [100,500,1000],
+             'max_depth' : [3,10,20]}
+             gridSearch = GridSearchCV(RandomForestClassifier(),paramDict,cv=5) 
+gridSearch.fit(x_train,y_train)
+print('best parameters found via grid search %s\n'% gridSearch.best_params_)
+print('scoring the test data with the random forest and best paramters %s' % gridSearch.score(x_test,y_test))
+
+from sklearn.metrics import confusion_matrix, classification_report
+
+predictedLabels = gridSearch.predict(x_test)
+
+matrix = confusion_matrix(y_test,predictedLabels)
+print('printing confusion matrix for random forest')
+print(matrix)
+print(classification_report(y_test,predictedLabels,target_names=['not recommended','recommended']))
+from sklearn.metrics import roc_curve
+
+PosProEstimates = gridSearch.predict_proba(x_test)[:,1] 
+fpr, tpr, thresholds = roc_curve(y_test, PosProEstimates)
+plt.plot(fpr,tpr, label='ROC curve',c='blue')
+plt.grid(b=True,alpha=0.7,color='gray')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate ")
+close_zero = np.argmin(np.abs(np.array(thresholds) - 0.5))
+plt.plot(fpr[close_zero],tpr[close_zero],marker='X',label='zero threshold',ms=15,c='black')
+plt.legend(loc='best')
+ 
